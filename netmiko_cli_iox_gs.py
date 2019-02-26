@@ -64,8 +64,9 @@ def main():
     commands_output = net_connect.send_config_set(config_commands)
 
     print('IOX and GS CLI configs: ', commands_output)
-    time.sleep(5)
+    time.sleep(60)
 
+    net_connect = ConnectHandler(**DEVICE_INFO)
     # save the run config
     command_output = net_connect.save_config()
     print(command_output)
