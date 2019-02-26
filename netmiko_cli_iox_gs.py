@@ -36,14 +36,15 @@ DEVICE_INFO = {
 
 def main():
 
-    print(DEVICE_INFO)
+    print('\nDevice information: ',DEVICE_INFO)
 
+    # connect to device using ssh/netmiko
     net_connect = ConnectHandler(**DEVICE_INFO)
     command_output = net_connect.find_prompt()
+    print('\nPrompt of the connected device: ', command_output)
 
-    print('\nConnected to device: ', command_output)
-
-
+    # define the config command sets to be sent to device.
+    # the commands will configure iox, vpg, nat, guest shell
     config_commands = ['iox', 'aaa new-model',
                        'aaa authentication login default local',
                        'aaa authorization exec default local',
@@ -61,12 +62,17 @@ def main():
                        'vnic gateway1 virtualportgroup 0 guest-interface 0 guest-ipaddress 10.1.1.2 netmask 255.255.255.0 gateway 10.1.1.1 name-server 208.67.222.222',
                        'end'
                        ]
+    # send config commands to device
     commands_output = net_connect.send_config_set(config_commands)
-
     print('IOX and GS CLI configs: ', commands_output)
-    time.sleep(60)
 
+    # time delay to wait for iox caf to be enabled
+    print('Wait 90 seconds for IOX to be enabled')
+    time.sleep(90)
+
+    # create a new connection to device to avoid the session timeouts
     net_connect = ConnectHandler(**DEVICE_INFO)
+
     # save the run config
     command_output = net_connect.save_config()
     print(command_output)
@@ -77,8 +83,20 @@ def main():
 
     # enable Guest shell
     command_output = net_connect.send_command('guestshell enable')
-
     print('Enable Guest Shell: ', command_output)
+
+    # time delay to wait for guest shell to be enabled
+    print('Wait 15 seconds for Guest Shell to complete configuration')
+    time.sleep(15)
+
+    # create a new connection to device to avoid the session timeouts
+    net_connect = ConnectHandler(**DEVICE_INFO)
+
+    # verify connectivity
+    command_output = net_connect.send_command('guestshell run ping 10.1.1.1 -c 5')
+    print('\nPing to VPG IP address: \n', command_output)
+    command_output = net_connect.send_command('guestshell run ping www.cisco.com -c 5')
+    print('\nPing to www.cisco.com: \n ', command_output)
 
     date_time = str(datetime.datetime.now().replace(microsecond=0))
 
