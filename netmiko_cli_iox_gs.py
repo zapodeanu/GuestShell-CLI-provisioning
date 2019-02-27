@@ -33,10 +33,23 @@ DEVICE_INFO = {
     'password': PASS,
     }
 
+def pprint(json_data):
+    """
+    Pretty print JSON formatted data
+    :param json_data:
+    :return:
+    """
+
+    print(json.dumps(json_data, indent=4, separators=(' , ', ' : ')))
+
 
 def main():
 
-    print('\nDevice information: ',DEVICE_INFO)
+    date_time = str(datetime.datetime.now().replace(microsecond=0))
+
+    print('\n\nBegin of application run at this time ', date_time)
+    print('\nDevice information: ')
+    pprint(DEVICE_INFO)
 
     # connect to device using ssh/netmiko
     net_connect = ConnectHandler(**DEVICE_INFO)
@@ -45,7 +58,9 @@ def main():
 
     # define the config command sets to be sent to device.
     # the commands will configure iox, vpg, nat, guest shell
-    config_commands = ['iox', 'aaa new-model',
+    config_commands = ['hostname GS-Gabi', 'line vty 0 15',
+                       'transport input ssh',
+                       'iox', 'aaa new-model',
                        'aaa authentication login default local',
                        'aaa authorization exec default local',
                        'ip name-server 208.67.222.222',
@@ -67,15 +82,16 @@ def main():
     print('IOX and GS CLI configs: ', commands_output)
 
     # time delay to wait for iox caf to be enabled
-    print('Wait 90 seconds for IOX to be enabled')
-    time.sleep(90)
+    print('Wait 30 seconds for IOX to be enabled')
+    time.sleep(30)
 
     # create a new connection to device to avoid the session timeouts
+    net_connect.disconnect()
     net_connect = ConnectHandler(**DEVICE_INFO)
 
     # save the run config
-    command_output = net_connect.save_config()
-    print(command_output)
+    # command_output = net_connect.save_config()
+    # print(command_output)
 
     # show iox
     command_output = net_connect.send_command('show iox')
@@ -90,13 +106,28 @@ def main():
     time.sleep(15)
 
     # create a new connection to device to avoid the session timeouts
+    net_connect.disconnect()
     net_connect = ConnectHandler(**DEVICE_INFO)
 
     # verify connectivity
     command_output = net_connect.send_command('guestshell run ping 10.1.1.1 -c 5')
     print('\nPing to VPG IP address: \n', command_output)
-    command_output = net_connect.send_command('guestshell run ping www.cisco.com -c 5')
-    print('\nPing to www.cisco.com: \n ', command_output)
+
+    # install bind-utils
+    command_output = net_connect.send_command('guestshell run sudo yum install bind-utils -y')
+    print('\nbind-utils installation: \n', command_output)
+    command_output = net_connect.send_command('guestshell run nslookup www.cisco.com')
+    print('\nwww.cisco.com nslookup: \n ', command_output)
+
+    # create a new connection to device to avoid the session timeouts
+    net_connect.disconnect()
+    net_connect = ConnectHandler(**DEVICE_INFO)
+
+    # update guest shell os
+    command_output = net_connect.send_command('guestshell run sudo yum update -y')
+    print('\nCent OS update: \n ', command_output)
+
+
 
     date_time = str(datetime.datetime.now().replace(microsecond=0))
 
