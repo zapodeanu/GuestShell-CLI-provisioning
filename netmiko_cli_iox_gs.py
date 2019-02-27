@@ -127,7 +127,25 @@ def main():
     command_output = net_connect.send_command('guestshell run sudo yum update -y')
     print('\nCent OS update: \n ', command_output)
 
+    # create a new connection to device to avoid the session timeouts
+    net_connect.disconnect()
+    net_connect = ConnectHandler(**DEVICE_INFO)
 
+    # install requests, git, update pip
+    command_output = net_connect.send_command('guestshell run sudo -E pip install --upgrade pip')
+    print('\n', command_output)
+    command_output = net_connect.send_command('guestshell run sudo -E pip install requests')
+    print(command_output)
+    command_output = net_connect.send_command('guestshell run sudo -E pip install requests[security]')
+    print(command_output)
+    command_output = net_connect.send_command('guestshell run sudo -E pip install ncclient')
+    print(command_output)
+    command_output = net_connect.send_command('guestshell run sudo pip list')
+    print(command_output)
+    command_output = net_connect.send_command('guestshell run sudo yum install git -y')
+    print(command_output)
+    command_output = net_connect.send_command('guestshell run git version')
+    print(command_output)
 
     date_time = str(datetime.datetime.now().replace(microsecond=0))
 
